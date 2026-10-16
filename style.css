@@ -1,3 +1,129 @@
-.completed{
+
+button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background-color: #4f46e5;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease,
+                transform 0.2s ease;
+}
+
+
+button:hover {
+    background-color: #4338ca;
+    transform: translateY(-1px);
+}
+
+
+button:active {
+    transform: translateY(0);
+}
+
+
+input:not([type="checkbox"]),
+select,
+textarea {
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+input:not([type="checkbox"]):focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px #6366f133;
+}
+
+.priority {
+    margin: 0 10px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.priority {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 4px 10px;
+    border-radius: 999px;
+
+    font-size: 14px;
+    font-weight: 650;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+
+.priority.high {
+    color: #b91c1c;
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+}
+
+
+.priority.medium {
+    color: #92400e;
+    background-color: #fef3c7;
+    border: 1px solid #fde68a;
+}
+
+
+.priority.low {
+    color: #166534;
+    background-color: #dcfce7;
+    border: 1px solid #bbf7d0;
+}
+
+#output > div {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    margin: 12px 0;
+    padding: 14px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+
+    transition: box-shadow 0.2s ease;
+
+}
+
+#output > div:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+}
+
+#output > div span:first-of-type {
+    flex: 1;
+    min-width: 100px;
+}
+
+#output span {
+    overflow-wrap: anywhere;
+}
+
+.completed {
     text-decoration: line-through;
+    color: #9ca3af;
+}
+
+
+textarea {
+    width: 100%;
+    min-height: 150px;
+    resize: vertical;
+    font-family: inherit;
 }
