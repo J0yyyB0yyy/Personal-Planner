@@ -13,16 +13,42 @@
 
         <section>
             <h2>Today's Plan</h2>
-            <div id="output"></div>
-            <input id="taskInput" type="text" name="task" placeholder="Add Task">
-            <button id="addTasks">Add Task</button>
-        </section>
-        <select id="taskPriority">
-            <option value="low">Low Priority</option>
-            <option value="medium" selected>Medium Priority</option>
-            <option value="high">High Priority</option>
-        </select>
 
+            <div class="stats">
+                <div class="stat-card totalDiv">
+                    <p>Total tasks</p>
+                    <span id="totalTasks">0</span>
+                </div>
+
+                <div class="stat-card completedDiv">
+                    <p>Completed</p>
+                    <span id="completedTasks">0</span>
+                </div>
+
+                <div class="stat-card pendingDiv">
+                    <p>Pending</p>
+                    <span id="pendingTasks">0</span>
+                </div>
+            </div>
+
+            <div id="output"></div>
+
+            <div class="task-form">
+                <input
+                    id="taskInput"
+                    type="text"
+                    placeholder="Add task..."
+                >
+                <select id="taskPriority">
+                    <option value="low">Low Priority</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="high">High Priority</option>
+                </select>
+                <button id="addTasks">Add Task</button>
+            </div>
+            
+        </section>
+        
         <section>
             <h2>Journal</h2>
             <h3>Today's Journal</h3>
