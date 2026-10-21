@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>
             Personal Planner
         </title>
@@ -31,7 +33,15 @@
                 </div>
             </div>
 
+            <div class="task-filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="completed">Completed</button>
+            </div>
+
             <div id="output"></div>
+
+            <p id="emptyMessage" class="empty-message" hidden></p>
 
             <div class="task-form">
                 <input
@@ -46,7 +56,7 @@
                 </select>
                 <button id="addTasks">Add Task</button>
             </div>
-            
+
         </section>
         
         <section>

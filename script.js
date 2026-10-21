@@ -1,7 +1,19 @@
-console.log("Planner loaded");
 
-const savedTasks=localStorage.getItem("tasks");
-let tasks=savedTasks ? JSON.parse(savedTasks):[];
+function makeId(){
+    return crypto.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2);
+};
+
+let tasks = [];
+try{
+    const parsed = JSON.parse(localStorage.getItem("tasks"));
+    tasks = Array.isArray(parsed) ? parsed : []; 
+}catch{
+    tasks = [];
+}
+
+tasks.forEach(function(t) {t.id ??= makeId();});
+
+let currentFilter = "all";
 
 const addTask = document.getElementById("addTasks");
 const taskInput = document.getElementById("taskInput");
@@ -12,10 +24,20 @@ const journal = document.getElementById("journal");
 const totalTasks = document.getElementById("totalTasks");
 const completedTasks = document.getElementById("completedTasks");
 const pendingTasks = document.getElementById("pendingTasks");
+const emptyMessage = document.getElementById("emptyMessage");
+
+const filterButtons=document.querySelectorAll(".filter-btn");
+const emptyTexts = {
+    all: "No tasks yet. Add one below.",
+    pending: "No pending tasks.",
+    completed: "No completed tasks."
+};
+
 
 function saveTasks() {
     localStorage.setItem("tasks", JSON.stringify(tasks));
 }
+saveTasks();
     
 function renderTask(task){
     const taskItem = document.createElement("div");
@@ -69,6 +91,7 @@ function renderTask(task){
         }
         saveTasks();
         updateStats();
+        applyFilter();
     });
     if(task.completed){
         taskText.classList.add("completed");
@@ -82,6 +105,7 @@ function renderTask(task){
         taskItem.remove();
         saveTasks();
         updateStats();
+        applyFilter();
         
     });
 
@@ -138,6 +162,11 @@ function renderTask(task){
             saveButton.remove();
             cancelButton.remove();
         });
+
+        editInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") saveButton.click();
+            else if (e.key === "Escape") cancelButton.click();
+        });
     });
 
 
@@ -156,6 +185,7 @@ tasks.forEach(function(task) {
 });
 
 updateStats();
+applyFilter();
 
 //add tasks button
 addTask.addEventListener("click", function(){
@@ -164,7 +194,7 @@ addTask.addEventListener("click", function(){
         return;
     }
     const task={
-        id: crypto.randomUUID(),
+        id: makeId(),
         text: taskInput.value.trim(),
         completed: false,
         priority: taskPriority.value
@@ -173,8 +203,12 @@ addTask.addEventListener("click", function(){
     saveTasks();
     renderTask(task);
     updateStats();
-    taskInput.value = "";
+    applyFilter();
 
+    taskInput.value = "";
+});
+taskInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") addTask.click();
 });
 
 //updating stats
@@ -190,12 +224,43 @@ function updateStats(){
 
 };
 
+
+function applyFilter() {
+    let visibleCount = 0;
+
+    for (const taskItem of output.children) {
+        const isCompleted = taskItem.querySelector('input[type="checkbox"]').checked;
+
+        const show =
+            currentFilter === "all" ||
+            (currentFilter === "pending" && !isCompleted) ||
+            (currentFilter === "completed" && isCompleted);
+
+        taskItem.hidden = !show;
+        if (show) visibleCount++;
+    }
+
+    emptyMessage.textContent = emptyTexts[currentFilter];
+    emptyMessage.hidden = visibleCount > 0;
+}
+
+filterButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+        currentFilter = button.dataset.filter;
+
+        filterButtons.forEach(function (item) {
+            item.classList.remove("active");
+        });
+
+        button.classList.add("active");
+        applyFilter();
+    });
+});
+
 //journal
 journal.value = localStorage.getItem("journal") || "";
 journal.addEventListener("input", function(){
     localStorage.setItem("journal", journal.value);
 });
-
-
 
 
