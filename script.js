@@ -14,11 +14,18 @@ try{
 tasks.forEach(function(t) {t.id ??= makeId();});
 
 let currentFilter = "all";
+let currentPriorityFilter = "all";
+
+let editingTaskId = null;
+
 
 const addTask = document.getElementById("addTasks");
 const taskInput = document.getElementById("taskInput");
 const output = document.getElementById("output");
+
 const taskPriority=document.getElementById("taskPriority");
+const priorityFilter = document.getElementById("priorityFilter");
+
 const journal = document.getElementById("journal");
 
 const totalTasks = document.getElementById("totalTasks");
@@ -66,6 +73,7 @@ function renderTask(task){
         prioritySelect.classList.add(task.priority);
 
         saveTasks();
+        applyFilter();
     })
 
     const checkBox = document.createElement("input");
@@ -77,6 +85,7 @@ function renderTask(task){
 
     const editButton = document.createElement("button");
     editButton.textContent= "Edit";
+    editButton.classList.add("edit-button");
 
     
     //checkbok
@@ -112,9 +121,24 @@ function renderTask(task){
 
     //edit
     editButton.addEventListener("click", function () {
+        if (editingTaskId !== null) {
+            return;
+        }
+
+        editingTaskId = task.id;
+        document.querySelectorAll(".edit-button").forEach(function (button) {
+            button.disabled = true;
+        });
+
         const editInput = document.createElement("input");
         editInput.type = "text";
         editInput.value = task.text;
+        editInput.classList.add("edit-input");
+
+
+        editInput.addEventListener("input", function () {
+            editInput.setCustomValidity("");
+        });
 
         const saveButton = document.createElement("button");
         saveButton.textContent = "Save";
@@ -136,6 +160,8 @@ function renderTask(task){
             const newText = editInput.value.trim();
 
             if (newText === "") {
+                editInput.setCustomValidity("Task name can't be empty.");
+                editInput.reportValidity();
                 editInput.focus();
                 return;
             }
@@ -151,6 +177,12 @@ function renderTask(task){
             editInput.remove();
             saveButton.remove();
             cancelButton.remove();
+
+            editingTaskId = null;
+
+            document.querySelectorAll(".edit-button").forEach(function (button) {
+                button.disabled = false;
+            });
         
         });
 
@@ -161,6 +193,12 @@ function renderTask(task){
             editInput.remove();
             saveButton.remove();
             cancelButton.remove();
+
+            editingTaskId = null;
+
+            document.querySelectorAll(".edit-button").forEach(function (button) {
+                button.disabled = false;
+            });
         });
 
         editInput.addEventListener("keydown", function (e) {
@@ -230,17 +268,38 @@ function applyFilter() {
 
     for (const taskItem of output.children) {
         const isCompleted = taskItem.querySelector('input[type="checkbox"]').checked;
+        const taskPriorityValue = taskItem.querySelector("select.priority").value;
 
-        const show =
+        const matchesStatus =
             currentFilter === "all" ||
             (currentFilter === "pending" && !isCompleted) ||
             (currentFilter === "completed" && isCompleted);
 
+        const matchesPriority =
+            currentPriorityFilter === "all" ||
+            taskPriorityValue === currentPriorityFilter;
+
+        const show = matchesStatus && matchesPriority;
+
         taskItem.hidden = !show;
         if (show) visibleCount++;
     }
+    
+    if (visibleCount === 0) {
+        if (
+            currentFilter !== "all" &&
+            currentPriorityFilter !== "all"
+        ) {
+            emptyMessage.textContent =
+                `No ${currentPriorityFilter}-priority ${currentFilter} tasks.`;
+        } else if (currentPriorityFilter !== "all") {
+            emptyMessage.textContent =
+                `No ${currentPriorityFilter}-priority tasks.`;
+        } else {
+            emptyMessage.textContent = emptyTexts[currentFilter];
+        }
+    }
 
-    emptyMessage.textContent = emptyTexts[currentFilter];
     emptyMessage.hidden = visibleCount > 0;
 }
 
@@ -255,6 +314,10 @@ filterButtons.forEach(function (button) {
         button.classList.add("active");
         applyFilter();
     });
+});
+priorityFilter.addEventListener("change", function () {
+    currentPriorityFilter = priorityFilter.value;
+    applyFilter();
 });
 
 //journal
