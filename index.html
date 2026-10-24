@@ -95,9 +95,27 @@
 
         <section>
             <h2>Journal</h2>
-            <h3>Today's Journal</h3>
+            <h3>Journal entry</h3>
+            <div class="journal-nav">
+                <button id="prevDay" aria-label="Previous day">←</button>
+                <input type="date" id="journalDate" aria-label="Journal date">
+                <button id="nextDay" aria-label="Next day">→</button>
+                <button id="todayBtn">Today</button>
+            </div>
             <textarea id="journal" name="msg" rows="10" aria-label="Today's journal"></textarea>
         </section>
+        
+        <dialog id="deleteDialog" class="confirm-dialog" aria-labelledby="deleteDialogTitle">
+            <form method="dialog">
+                <h3 id="deleteDialogTitle">Delete repeating task</h3>
+                <p id="deleteDialogText"></p>
+                <div class="dialog-actions">
+                    <button value="cancel" class="dialog-keep" autofocus>Keep task</button>
+                    <button value="today" class="dialog-today">Delete today only</button>
+                    <button value="series" class="dialog-series">Delete entire series</button>
+                </div>
+            </form>
+        </dialog>
 
         <script src="script.js"></script>
     </body>

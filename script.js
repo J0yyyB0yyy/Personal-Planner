@@ -1,23 +1,49 @@
-
-function makeId(){
-    return crypto.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
+// ============================================================
+// STATE
+// ============================================================
 
 let tasks = [];
-try{
+
+try {
     const parsed = JSON.parse(localStorage.getItem("tasks"));
-    tasks = Array.isArray(parsed) ? parsed : []; 
-}catch{
+    tasks = Array.isArray(parsed) ? parsed : [];
+} catch {
     tasks = [];
 }
 
-tasks.forEach(function(t) {t.id ??= makeId();});
+let recurringTemplates = [];
 
-let currentFilter = "all"
+try {
+    const parsed = JSON.parse(localStorage.getItem("recurringTemplates"));
+    recurringTemplates = Array.isArray(parsed) ? parsed : [];
+} catch {
+    recurringTemplates = [];
+}
+
+tasks.forEach(function (t) {
+    t.id ??= makeId();
+});
+
+let currentFilter = "all";
 let currentPriorityFilter = "all";
 let currentSort = "default";
-
 let editingTaskId = null;
+
+let recurringSkips = {};
+
+try {
+    recurringSkips = JSON.parse(localStorage.getItem("recurringSkips")) || {};
+} catch {
+    recurringSkips = {};
+}
+
+let journalDate = getDateKey();
+//If the tab stays open past midnight
+let lastToday = getDateKey();
+
+// ============================================================
+// DOM REFERENCES & CONSTANTS
+// ============================================================
 
 //task
 const addTask = document.getElementById("addTasks");
@@ -28,7 +54,7 @@ const output = document.getElementById("output");
 const repeatDaily = document.getElementById("repeatDaily");
 
 //filters
-const taskPriority=document.getElementById("taskPriority");
+const taskPriority = document.getElementById("taskPriority");
 const priorityFilter = document.getElementById("priorityFilter");
 const sortTasks = document.getElementById("sortTasks");
 
@@ -37,18 +63,33 @@ const searchTasks = document.getElementById("searchTasks");
 
 //journal
 const journal = document.getElementById("journal");
+const journalDateInput = document.getElementById("journalDate");
+const prevDay = document.getElementById("prevDay");
+const nextDay = document.getElementById("nextDay");
+const todayBtn = document.getElementById("todayBtn");
 
 const totalTasks = document.getElementById("totalTasks");
 const completedTasks = document.getElementById("completedTasks");
 const pendingTasks = document.getElementById("pendingTasks");
 const emptyMessage = document.getElementById("emptyMessage");
 
-const filterButtons=document.querySelectorAll(".filter-btn");
+const filterButtons = document.querySelectorAll(".filter-btn");
 const emptyTexts = {
     all: "No tasks yet. Add one below.",
     pending: "No pending tasks.",
     completed: "No completed tasks."
 };
+
+const deleteDialog = document.getElementById("deleteDialog");
+const deleteDialogText = document.getElementById("deleteDialogText");
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function makeId() {
+    return crypto.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
 
 function getDateKey(date = new Date()) {
     const year = date.getFullYear();
@@ -58,26 +99,50 @@ function getDateKey(date = new Date()) {
     return `${year}-${month}-${day}`;
 }
 
-let recurringSkips = {};
-try {
-    recurringSkips = JSON.parse(
-        localStorage.getItem("recurringSkips")
-    ) || {};
-} catch {
-    recurringSkips = {};
+function getPriorityRank(priority) {
+    const priorityRanks = {
+        high: 3,
+        medium: 2,
+        low: 1
+    };
+    return priorityRanks[priority] ?? 0;
+}
+function syncTemplate(task) {
+    if (!task.recurrenceId) return;
+    const template = recurringTemplates.find(t => t.recurrenceId === task.recurrenceId);
+    if (!template) return;
+    template.text = task.text;
+    template.priority = task.priority;
+    saveRecurringTemplates();
 }
 
-function saveRecurringSkips() {
-    localStorage.setItem(
-        "recurringSkips",
-        JSON.stringify(recurringSkips)
-    );
+// ============================================================
+// STORAGE
+// ============================================================
+
+function saveToStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (err) {
+        console.error("Could not save " + key, err);
+    }
 }
 
 function saveTasks() {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
+    saveToStorage("tasks", tasks);
 }
-saveTasks();
+
+function saveRecurringTemplates() {
+    saveToStorage("recurringTemplates", recurringTemplates);
+}
+
+function saveRecurringSkips() {
+    saveToStorage("recurringSkips", recurringSkips);
+}
+
+// ============================================================
+// TASK LOGIC
+// ============================================================
 
 function endEditing() {
     editingTaskId = null;
@@ -86,127 +151,194 @@ function endEditing() {
     });
 }
 
-//delete task
+function askDeleteChoice(task) {
+    return new Promise(function (resolve) {
+        if (deleteDialog.open) {
+            resolve("cancel");
+            return;
+        }
 
-function deleteTask(task) {
-    // Delete an ordinary task.
+        deleteDialogText.textContent = `"${task.text}" repeats every day. What do you want to delete?`;
+        deleteDialog.returnValue = "";
+
+        deleteDialog.addEventListener(
+            "close",
+            function () {
+                resolve(deleteDialog.returnValue || "cancel");
+            },
+            { once: true }
+        );
+
+        deleteDialog.showModal();
+    });
+}
+
+//delete task
+async function deleteTask(task) {
     if (!task.repeatDaily || !task.recurrenceId) {
         tasks = tasks.filter(item => item.id !== task.id);
         return true;
     }
 
-    const choice = prompt(
-        "Delete recurring task:\n" +
-        "1. Delete today only\n" +
-        "2. Delete the entire series\n\n" +
-        "Enter 1 or 2. Cancel to keep the task."
-    );
+    const choice = await askDeleteChoice(task);
 
-    if (choice !== "1" && choice !== "2") {
-        return false;
-    }
-
-    if (choice === "1") {
-        const today = getDateKey();
-
+    if (choice === "today") {
+        const today = task.occurrenceDate || getDateKey();
         recurringSkips[task.recurrenceId] ??= [];
-
         if (!recurringSkips[task.recurrenceId].includes(today)) {
             recurringSkips[task.recurrenceId].push(today);
         }
-
-        saveRecurringSkips();
-
         tasks = tasks.filter(item => item.id !== task.id);
+        saveRecurringSkips();
         return true;
     }
 
-    // Delete the entire recurring series.
-    tasks = tasks.filter(
-        item => item.recurrenceId !== task.recurrenceId
-    );
+    if (choice === "series") {
+        tasks = tasks.filter(item => item.recurrenceId !== task.recurrenceId);
+        recurringTemplates = recurringTemplates.filter(
+            template => template.recurrenceId !== task.recurrenceId
+        );
+        delete recurringSkips[task.recurrenceId];
+        saveRecurringTemplates();
+        saveRecurringSkips();
+        return true;
+    }
 
-    delete recurringSkips[task.recurrenceId];
-    saveRecurringSkips();
-
-    return true;
+    return false;
 }
 
+function createDailyOccurrences() {
+    const today = getDateKey();
 
-function renderTask(task){
+    recurringTemplates.forEach(function (template) {
+        const recurrenceId = template.recurrenceId;
+
+        if (recurringSkips[recurrenceId]?.includes(today)) {
+            return;
+        }
+
+        const alreadyExists = tasks.some(function (task) {
+            return task.recurrenceId === recurrenceId && task.occurrenceDate === today;
+        });
+
+        if (alreadyExists) {
+            return;
+        }
+
+        tasks.push({
+            id: makeId(),
+            text: template.text,
+            completed: false,
+            priority: template.priority,
+            repeatDaily: true,
+            recurrenceId: recurrenceId,
+            occurrenceDate: today
+        });
+    });
+
+    tasks = tasks.filter(function (task) {
+        return !(task.repeatDaily && task.recurrenceId && task.occurrenceDate < today);
+    });
+
+    saveTasks();
+}
+
+//updating stats
+function updateStats() {
+    let total = tasks.length;
+    let completed = tasks.filter(item => item.completed).length;
+    let pending = tasks.filter(item => !item.completed).length;
+
+    totalTasks.textContent = total;
+    completedTasks.textContent = completed;
+    pendingTasks.textContent = pending;
+    searchTasks.hidden = tasks.length === 0;
+    if (tasks.length === 0) searchTasks.value = ""; 
+}
+
+// ============================================================
+// RENDERING, FILTERING & SORTING
+// ============================================================
+
+function renderTask(task) {
     const taskItem = document.createElement("div");
     taskItem.dataset.id = task.id;
 
     const taskText = document.createElement("span");
-    taskText.textContent=task.text;
+    taskText.textContent = task.text;
 
     //priotity
     const prioritySelect = document.createElement("select");
     prioritySelect.classList.add("priority");
     const priorities = ["low", "medium", "high"];
 
-    priorities.forEach(function(priority){
+    priorities.forEach(function (priority) {
         const option = document.createElement("option");
-        option.value=priority;
-        option.textContent=priority.charAt(0).toUpperCase()+priority.slice(1);
+        option.value = priority;
+        option.textContent = priority.charAt(0).toUpperCase() + priority.slice(1);
         prioritySelect.appendChild(option);
     });
-    prioritySelect.value=task.priority ?? "medium";
+    prioritySelect.value = task.priority ?? "medium";
     prioritySelect.classList.add(prioritySelect.value);
 
-    prioritySelect.addEventListener("change", function(){
-
+    prioritySelect.addEventListener("change", function () {
         task.priority = prioritySelect.value;
         prioritySelect.classList.remove("low", "medium", "high");
         prioritySelect.classList.add(task.priority);
 
         saveTasks();
+        syncTemplate(task);
         applyFilter();
-    })
+    });
 
     const checkBox = document.createElement("input");
-    checkBox.type="checkbox";
+    checkBox.type = "checkbox";
     checkBox.checked = task.completed;
+    checkBox.setAttribute("aria-label", "Mark complete: " + task.text);
 
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
     deleteButton.classList.add("delete-button");
+    deleteButton.setAttribute("aria-label", "Delete " + task.text);
 
     const editButton = document.createElement("button");
-    editButton.textContent= "Edit";
+    editButton.textContent = "Edit";
     editButton.classList.add("edit-button");
+    editButton.setAttribute("aria-label", "Edit " + task.text);
+    editButton.disabled = editingTaskId !== null;
 
-    
     //checkbok
-    checkBox.addEventListener("change", function(){
-        if(checkBox.checked){
-            task.completed=true;
+    checkBox.addEventListener("change", function () {
+        if (checkBox.checked) {
+            task.completed = true;
             taskText.classList.add("completed");
-        }
-        else{
+        } else {
             taskText.classList.remove("completed");
-            task.completed=false;
+            task.completed = false;
         }
         saveTasks();
         updateStats();
         applyFilter();
     });
-    if(task.completed){
+    if (task.completed) {
         taskText.classList.add("completed");
     }
 
     //delete
-    deleteButton.addEventListener("click", function () {
-        const deleted = deleteTask(task);
+    deleteButton.addEventListener("click", async function () {
+        const deleted = await deleteTask(task);
 
         if (!deleted) return;
+
+        if (editingTaskId === task.id) {
+            endEditing();
+        }
 
         taskItem.remove();
         saveTasks();
         updateStats();
         applyFilter();
     });
-
 
     //edit
     editButton.addEventListener("click", function () {
@@ -223,7 +355,6 @@ function renderTask(task){
         editInput.type = "text";
         editInput.value = task.text;
         editInput.classList.add("edit-input");
-
 
         editInput.addEventListener("input", function () {
             editInput.setCustomValidity("");
@@ -260,7 +391,12 @@ function renderTask(task){
             task.text = newText;
             taskText.textContent = newText;
 
+            checkBox.setAttribute("aria-label", "Mark complete: " + newText);
+            deleteButton.setAttribute("aria-label", "Delete " + newText);
+            editButton.setAttribute("aria-label", "Edit " + newText);
+
             saveTasks();
+            syncTemplate(task);
 
             taskText.hidden = false;
             editButton.hidden = false;
@@ -270,7 +406,7 @@ function renderTask(task){
             cancelButton.remove();
 
             endEditing();
-        
+            applyFilter();
         });
 
         cancelButton.addEventListener("click", function () {
@@ -288,9 +424,7 @@ function renderTask(task){
             if (e.key === "Enter") saveButton.click();
             else if (e.key === "Escape") cancelButton.click();
         });
-
     });
-
 
     taskItem.appendChild(checkBox);
     taskItem.appendChild(taskText);
@@ -298,72 +432,8 @@ function renderTask(task){
     taskItem.appendChild(editButton);
     taskItem.appendChild(deleteButton);
 
-
     output.append(taskItem);
 }
-
-createDailyOccurrences();
-tasks.forEach(function(task) {
-    renderTask(task);
-});
-
-updateStats();
-applyFilter();
-
-//add tasks button
-addTask.addEventListener("click", function(){
-
-    if(taskInput.value.trim()===""){
-        return;
-    }
-    const isRepeating = repeatDaily.checked;
-
-    const task = {
-        id: makeId(),
-        text: taskInput.value.trim(),
-        completed: false,
-        priority: taskPriority.value,
-
-        repeatDaily: isRepeating,
-        recurrenceId: isRepeating ? makeId() : null,
-        occurrenceDate: getDateKey()
-    };
-    tasks.push(task);
-    saveTasks();
-    renderTask(task);
-    updateStats();
-    applyFilter();
-
-    taskInput.value = "";
-    repeatDaily.checked = false;
-    taskInput.focus();
-});
-taskInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") addTask.click();
-});
-
-//updating stats
-function updateStats(){
-
-    let total = tasks.length;
-    let completed = tasks.filter(item=>item.completed).length;
-    let pending = tasks.filter(item=>!item.completed).length;
-
-    totalTasks.textContent = total;
-    completedTasks.textContent = completed;
-    pendingTasks.textContent = pending;
-
-}
-
-function getPriorityRank(priority){
-    const priorityRanks={
-        high: 3,
-        medium: 2,
-        low: 1
-    };
-    return priorityRanks[priority] ?? 0;
-}
-
 
 //apply filters + sorting
 function applyFilter() {
@@ -383,8 +453,7 @@ function applyFilter() {
             (currentFilter === "completed" && isCompleted);
 
         const matchesPriority =
-            currentPriorityFilter === "all" ||
-            taskPriorityValue === currentPriorityFilter;
+            currentPriorityFilter === "all" || taskPriorityValue === currentPriorityFilter;
 
         const show = matchesStatus && matchesPriority && matchesSearch;
 
@@ -417,17 +486,105 @@ function applyFilter() {
         if (searchText !== "") {
             emptyMessage.textContent = `No tasks match "${searchTasks.value.trim()}".`;
         } else if (currentFilter !== "all" && currentPriorityFilter !== "all") {
-            emptyMessage.textContent =
-                `No ${currentPriorityFilter}-priority ${currentFilter} tasks.`;
+            emptyMessage.textContent = `No ${currentPriorityFilter}-priority ${currentFilter} tasks.`;
         } else if (currentPriorityFilter !== "all") {
-            emptyMessage.textContent =
-                `No ${currentPriorityFilter}-priority tasks.`;
+            emptyMessage.textContent = `No ${currentPriorityFilter}-priority tasks.`;
         } else {
             emptyMessage.textContent = emptyTexts[currentFilter];
         }
     }
     emptyMessage.hidden = visibleCount > 0;
 }
+
+// ============================================================
+// JOURNAL
+// ============================================================
+
+function loadJournal() {
+    journalDateInput.value = journalDate;
+    journal.value = localStorage.getItem("journal:" + journalDate) || "";
+    journal.setAttribute(
+        "aria-label",
+        journalDate === getDateKey() ? "Today's journal" : "Journal for " + journalDate
+    );
+}
+
+function shiftDay(days) {
+    const d = new Date(journalDate + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    journalDate = getDateKey(d);
+    loadJournal();
+}
+
+function checkNewDay() {
+    const today = getDateKey();
+    if (today === lastToday) return;
+
+    if (journalDate === lastToday) {
+        journalDate = today;
+        loadJournal();
+    }
+    lastToday = today;
+    endEditing();
+    createDailyOccurrences();
+    output.replaceChildren();
+    tasks.forEach(renderTask);
+    updateStats();
+    applyFilter();
+}
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+
+// --- tasks ---
+deleteDialog.addEventListener("click", function (e) {
+    if (e.target === deleteDialog) deleteDialog.close("cancel");
+});
+
+//add tasks button
+addTask.addEventListener("click", function () {
+    if (taskInput.value.trim() === "") {
+        return;
+    }
+    const isRepeating = repeatDaily.checked;
+
+    const task = {
+        id: makeId(),
+        text: taskInput.value.trim(),
+        completed: false,
+        priority: taskPriority.value,
+
+        repeatDaily: isRepeating,
+        recurrenceId: isRepeating ? makeId() : null,
+        occurrenceDate: getDateKey()
+    };
+    tasks.push(task);
+    saveTasks();
+
+    if (isRepeating) {
+        recurringTemplates.push({
+            recurrenceId: task.recurrenceId,
+            text: task.text,
+            priority: task.priority,
+            repeatDaily: true
+        });
+
+        saveRecurringTemplates();
+    }
+
+    renderTask(task);
+    updateStats();
+    applyFilter();
+
+    taskInput.value = "";
+    repeatDaily.checked = false;
+    taskInput.focus();
+});
+
+taskInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") addTask.click();
+});
 
 filterButtons.forEach(function (button) {
     button.addEventListener("click", function () {
@@ -441,46 +598,6 @@ filterButtons.forEach(function (button) {
         applyFilter();
     });
 });
-
-function createDailyOccurrences(){
-    const today = getDateKey();
-
-    const recurrenceIds = new Set(
-        tasks
-            .filter(task => task.repeatDaily && task.recurrenceId)
-            .map(task => task.recurrenceId)
-    );
-
-    recurrenceIds.forEach(function(recurrenceId){
-        if (recurringSkips[recurrenceId]?.includes(today)) {
-            return;
-        }
-
-        const series = tasks.filter(task => task.recurrenceId === recurrenceId);
-
-        const alreadyExists = series.some(task => task.occurrenceDate === today);
-        if (alreadyExists) return;
-
-        const latestTask = series.reduce((latest, task) => {
-            return task.occurrenceDate > latest.occurrenceDate ? task : latest;
-        });
-        if (latestTask.occurrenceDate > today) return;
-
-        tasks.push({
-            ...latestTask,
-            id: makeId(),
-            completed: false,
-            occurrenceDate: today
-        });
-    });
-
-    // only show today's version
-    tasks = tasks.filter(function (task) {
-        return !(task.repeatDaily && task.recurrenceId && task.occurrenceDate < today);
-    });
-
-    saveTasks();
-}
 
 sortTasks.addEventListener("change", function () {
     currentSort = sortTasks.value;
@@ -496,10 +613,67 @@ searchTasks.addEventListener("input", function () {
     applyFilter();
 });
 
-//journal
-journal.value = localStorage.getItem("journal") || "";
-journal.addEventListener("input", function(){
-    localStorage.setItem("journal", journal.value);
+// --- journal ---
+journal.addEventListener("input", function () {
+    if (journal.value.trim() === "") {
+        localStorage.removeItem("journal:" + journalDate);
+    } else {
+        localStorage.setItem("journal:" + journalDate, journal.value);
+    }
 });
 
+prevDay.addEventListener("click", function () {
+    shiftDay(-1);
+});
 
+nextDay.addEventListener("click", function () {
+    shiftDay(1);
+});
+
+todayBtn.addEventListener("click", function () {
+    journalDate = getDateKey();
+    loadJournal();
+});
+
+journalDateInput.addEventListener("change", function () {
+    if (journalDateInput.value) {
+        journalDate = journalDateInput.value;
+        loadJournal();
+    } else {
+        loadJournal();    // ADD: restores the current date in the field
+    }
+});
+
+document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) checkNewDay();
+});
+
+window.addEventListener("focus", checkNewDay);
+
+window.addEventListener("storage", function (e) {
+    if (["tasks", "recurringTemplates", "recurringSkips"].includes(e.key)) {
+        location.reload();
+    }
+});
+
+// ============================================================
+// STARTUP
+// ============================================================
+
+createDailyOccurrences();
+tasks.forEach(renderTask);
+saveTasks();
+
+updateStats();
+
+applyFilter();
+
+// one-time move of your old single entry into today's entry
+const oldJournal = localStorage.getItem("journal");
+if (oldJournal && !localStorage.getItem("journal:" + journalDate)) {
+    localStorage.setItem("journal:" + journalDate, oldJournal);
+    localStorage.removeItem("journal");
+}
+
+loadJournal();
+setInterval(checkNewDay, 60000);

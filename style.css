@@ -479,6 +479,13 @@ textarea:focus-visible {
     resize: vertical;
     line-height: 1.6;
 }
+.journal-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
 
 /* ===== Search Bar ===== */
 #searchTasks {
@@ -577,6 +584,106 @@ textarea:focus-visible {
 
 .repeat-option input[type="checkbox"]:checked::before {
     transform: rotate(-45deg) scale(1);
+}
+
+/* ===== Delete-repeating-task dialog ===== */
+.confirm-dialog {
+    width: calc(100% - 32px);
+    max-width: 440px;
+    padding: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #fff;
+    color: #1e293b;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .25);
+}
+.confirm-dialog form {
+    padding: 24px;
+}
+
+.confirm-dialog[open] {
+    animation: dialog-pop .18s ease-out;
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(15, 23, 42, .45);
+    backdrop-filter: blur(2px);
+}
+
+.confirm-dialog h3 {
+    margin: 0 0 8px;
+    color: #111827;
+    font-size: 1.15rem;
+}
+
+.confirm-dialog p {
+    margin: 0 0 22px;
+    color: #475569;
+    font-size: .95rem;
+    overflow-wrap: anywhere;
+}
+
+.dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.confirm-dialog .dialog-actions button {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.confirm-dialog .dialog-keep {
+    color: #374151;
+    border: 1px solid #d8dfed;
+    background: #fff;
+}
+
+.confirm-dialog .dialog-keep:hover {
+    background: #f1f5f9;
+    box-shadow: none;
+}
+
+.confirm-dialog .dialog-today {
+    color: #e11d48;
+    border: 1px solid #ff9aa9;
+    background: #fff;
+}
+
+.confirm-dialog .dialog-today:hover {
+    background: #fff1f2;
+    box-shadow: none;
+}
+
+.confirm-dialog .dialog-series {
+    color: #fff;
+    border: 1px solid #e11d48;
+    background: #e11d48;
+}
+
+.confirm-dialog .dialog-series:hover {
+    background: #be123c;
+    box-shadow: none;
+}
+
+@keyframes dialog-pop {
+    from { opacity: 0; transform: translateY(8px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+}
+
+@media (max-width: 500px) {
+    .dialog-actions {
+        flex-direction: column-reverse;
+    }
+
+    .confirm-dialog .dialog-actions button {
+        width: 100%;
+    }
 }
 
 /* ===== Responsive ===== */
