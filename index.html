@@ -4,9 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>
-            Personal Planner
-        </title>
+        <title>Personal Planner</title>
         <link rel="stylesheet" href="style.css">
     </head>
 
@@ -33,22 +31,43 @@
                 </div>
             </div>
 
-            <div class="task-filters">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="pending">Pending</button>
-                <button class="filter-btn" data-filter="completed">Completed</button>
+            <div class="filter-toolbar">
+                <div class="task-filters" role="group" aria-label="Filter by status">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="completed">Completed</button>
+                </div>
+
+                <div class="toolbar-divider" aria-hidden="true"></div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-icon" aria-hidden="true">⚑</span>
+                    <label for="priorityFilter">Filter by priority</label>
+                    <select id="priorityFilter">
+                        <option value="all">All priorities</option>
+                        <option value="high">High priority</option>
+                        <option value="medium">Medium priority</option>
+                        <option value="low">Low priority</option>
+                    </select>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-icon" aria-hidden="true">⇅</span>
+                    <label for="sortTasks">Sort tasks</label>
+                    <select id="sortTasks">
+                        <option value="default">Default order</option>
+                        <option value="priority-desc">High to Low Priority</option>
+                        <option value="priority-asc">Low to High Priority</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="priority-filter">
-                <label for="priorityFilter">Filter by priority:  </label>
-
-                <select id="priorityFilter">
-                    <option value="all">All priorities</option>
-                    <option value="high">High priority</option>
-                    <option value="medium">Medium priority</option>
-                    <option value="low">Low priority</option>
-                </select>
-            </div>
+            <input
+                type="search"
+                id="searchTasks"
+                placeholder="Search tasks..."
+                aria-label="Search tasks"
+            />
 
             <div id="output"></div>
 
@@ -59,22 +78,27 @@
                     id="taskInput"
                     type="text"
                     placeholder="Add task..."
+                    aria-label="New task"
                 >
-                <select id="taskPriority">
+                <label class="repeat-option" for="repeatDaily">
+                    <input type="checkbox" id="repeatDaily">
+                    <span>Repeat every day</span>
+                </label>
+                <select id="taskPriority" aria-label="Task priority">
                     <option value="low">Low Priority</option>
                     <option value="medium" selected>Medium Priority</option>
                     <option value="high">High Priority</option>
                 </select>
                 <button id="addTasks">Add Task</button>
             </div>
-
         </section>
-        
+
         <section>
             <h2>Journal</h2>
             <h3>Today's Journal</h3>
-            <textarea id="journal" name="msg" rows="10" cols="100"></textarea>
+            <textarea id="journal" name="msg" rows="10" aria-label="Today's journal"></textarea>
         </section>
+
         <script src="script.js"></script>
     </body>
 </html>

@@ -1,3 +1,4 @@
+/* ===== Base ===== */
 * {
     box-sizing: border-box;
 }
@@ -18,7 +19,12 @@ body {
     line-height: 1.5;
 }
 
-/* Headings */
+/* Make the hidden attribute win over display: flex etc. */
+[hidden] {
+    display: none !important;
+}
+
+/* ===== Headings ===== */
 h1 {
     margin: 0 0 28px;
     color: #111827;
@@ -42,7 +48,7 @@ h3 {
 
 section { margin-bottom: 32px; }
 
-/* Dashboard cards */
+/* ===== Dashboard cards ===== */
 .stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -90,45 +96,7 @@ section { margin-bottom: 32px; }
 .completedDiv { border-top-color: #22c55e; }
 .pendingDiv { border-top-color: #f59e0b; }
 
-/* Task list */
-#output {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: 0 0 16px;
-}
-
-#output > div {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    min-width: 0;
-    padding: 14px 16px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    transition: border-color .2s ease, box-shadow .2s ease;
-}
-
-#output > div:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 3px 10px rgba(15, 23, 42, .05);
-}
-
-#output > div span:first-of-type {
-    flex: 1;
-    min-width: 100px;
-}
-
-#output span { overflow-wrap: anywhere; }
-
-.completed {
-    color: #94a3b8;
-    text-decoration: line-through;
-}
-
-/* Checkboxes */
+/* ===== General form controls ===== */
 input[type="checkbox"] {
     width: 16px;
     height: 16px;
@@ -137,7 +105,6 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 
-/* General form controls */
 input:not([type="checkbox"]),
 select,
 textarea {
@@ -160,87 +127,7 @@ textarea:focus {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, .14);
 }
 
-/* Add-task form */
-.task-form {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 16px 0;
-}
-
-#taskInput {
-    flex: 1;
-    min-width: 180px;
-}
-
-#taskPriority {
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-    color: #1e293b;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-/* Journal */
-#journal {
-    display: block;
-    width: 100%;
-    min-height: 180px;
-    margin-top: 12px;
-    padding: 16px;
-    resize: vertical;
-    line-height: 1.6;
-}
-
-/* Priority selector — closed state */
-select.priority {
-    appearance: auto;
-    min-width: 125px;
-    padding: 8px 12px;
-
-    border: 1px solid transparent;
-    border-radius: 8px;
-
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-
-    cursor: pointer;
-}
-
-/* Low priority — green */
-select.priority.low {
-    color: #166534;
-    background-color: #dcfce7;
-    border-color: #bbf7d0;
-}
-
-/* Medium priority — amber */
-select.priority.medium {
-    color: #92400e;
-    background-color: #fef3c7;
-    border-color: #fde68a;
-}
-
-/* High priority — red */
-select.priority.high {
-    color: #b91c1c;
-    background-color: #fee2e2;
-    border-color: #fecaca;
-}
-
-/* Opened menu options — neutral colours */
-select.priority option {
-    background-color: #ffffff;
-    color: #1e293b;
-    font-weight: 400;
-}
-
-
-/* Buttons */
+/* ===== Buttons (base) ===== */
 button {
     padding: 9px 15px;
     border: 1px solid transparent;
@@ -269,7 +156,467 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* Responsive layout */
+/* ===== Filter toolbar ===== */
+.filter-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 22px;
+    margin: 20px 0;
+    padding: 16px;
+    background: linear-gradient(135deg, #ffffff, #faf9ff);
+    border: 1px solid #e2e8f0;
+    border-radius: 17px;
+    box-shadow: 0 5px 18px rgba(30, 41, 59, 0.05);
+}
+
+.task-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0;
+}
+
+.filter-btn {
+    min-height: 42px;
+    padding: 0 19px;
+    border: 1px solid #e0e5f2;
+    border-radius: 13px;
+    background: #fff;
+    color: #26324b;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background .2s, color .2s, border-color .2s,
+                transform .2s, box-shadow .2s;
+}
+
+.filter-btn:hover {
+    border-color: #c4b5fd;
+    background: #f7f3ff;
+    box-shadow: none;
+}
+
+.filter-btn:active {
+    transform: scale(.98);
+}
+
+.filter-btn.active,
+.filter-btn.active:hover {
+    color: #fff;
+    border-color: #8900f5;
+    background: linear-gradient(135deg, #a100ff, #7600e8);
+    box-shadow: 0 4px 10px rgba(137, 0, 245, .18);
+}
+
+.toolbar-divider {
+    width: 1px;
+    align-self: stretch;
+    min-height: 42px;
+    background: #d9deeb;
+}
+
+.toolbar-group {
+    display: grid;
+    grid-template-columns: 40px minmax(120px, 1fr);
+    grid-template-rows: auto 40px;
+    align-items: center;
+    column-gap: 12px;
+    flex: 1 1 190px;
+    min-width: 0;
+}
+
+.toolbar-group label {
+    grid-column: 2;
+    grid-row: 1;
+    color: #5e6b87;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.toolbar-icon {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    background: #f0f2f8;
+    color: #202c47;
+    font-size: 20px;
+}
+
+.toolbar-group select {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #d8dfed;
+    border-radius: 10px;
+    background: #fff;
+    color: #17223d;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.toolbar-group select:hover {
+    border-color: #b9a0fa;
+}
+
+.toolbar-group select:focus-visible {
+    outline: none;
+    border-color: #8900f5;
+    box-shadow: 0 0 0 3px rgba(137, 0, 245, .12);
+}
+
+/* ===== Task list / cards ===== */
+#output {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    margin: 0 0 16px;
+}
+
+#output > div {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    min-height: 70px;
+    padding: 12px 15px;
+    background: #fff;
+    border: 1px solid #e0e6f2;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(30, 41, 59, .035);
+    transition: border-color .2s, box-shadow .2s;
+}
+
+#output > div:hover {
+    border-color: #d4c5fb;
+    box-shadow: 0 5px 15px rgba(30, 41, 59, .06);
+}
+
+#output > div > span {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: #17223d;
+    font-size: 15px;
+}
+
+/* must out-rank the colour rule above, or completed tasks never turn grey */
+#output > div > span.completed {
+    color: #94a3b8;
+    text-decoration: line-through;
+}
+
+#output input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #8900f5;
+}
+
+/* Priority select inside a task */
+#output select.priority {
+    appearance: auto;
+    min-width: 112px;
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid;
+    border-radius: 11px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#output select.priority.low {
+    color: #16804a;
+    border-color: #b8f0d0;
+    background-color: #eafbf1;
+}
+
+#output select.priority.medium {
+    color: #a85b00;
+    border-color: #ffe5a3;
+    background-color: #fff7df;
+}
+
+#output select.priority.high {
+    color: #d71920;
+    border-color: #ffcaca;
+    background-color: #fff0f0;
+}
+
+/* Opened menu options stay neutral */
+#output select.priority option {
+    background-color: #ffffff;
+    color: #1e293b;
+    font-weight: 400;
+}
+
+/* Task buttons */
+#output button {
+    min-height: 40px;
+    padding: 0 15px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#output .edit-button {
+    color: #fff;
+    border: 1px solid #8900f5;
+    background: linear-gradient(135deg, #a100ff, #7600e8);
+}
+
+#output .edit-button:hover {
+    background: linear-gradient(135deg, #8f00e6, #6a00d1);
+}
+
+#output .edit-button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+/* Delete = any task button that is not an edit-mode button */
+#output button:not(.edit-button):not(.save-edit-button):not(.cancel-edit-button) {
+    color: #e11d48;
+    border: 1px solid #ff9aa9;
+    background: #fff;
+}
+
+#output button:not(.edit-button):not(.save-edit-button):not(.cancel-edit-button):hover {
+    background: #fff1f2;
+}
+
+/* ===== Edit mode ===== */
+/* #output prefix so these beat the general input/button rules */
+#output .edit-input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 2px solid #6c63ff;
+    border-radius: 10px;
+    background: #fff;
+    color: #17223d;
+    font: inherit;
+    font-size: 15px;
+}
+
+#output .edit-input:focus {
+    border-color: #5146e5;
+    box-shadow: 0 0 0 3px rgba(108, 99, 255, .18);
+}
+
+#output .save-edit-button {
+    color: #fff;
+    border: none;
+    background: #16a34a;
+}
+
+#output .save-edit-button:hover {
+    background: #15803d;
+}
+
+#output .cancel-edit-button {
+    color: #374151;
+    border: none;
+    background: #e5e7eb;
+}
+
+#output .cancel-edit-button:hover {
+    background: #d1d5db;
+}
+
+/* ===== Empty state ===== */
+.empty-message {
+    margin: 0 0 16px;
+    padding: 18px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    color: #64748b;
+    text-align: center;
+}
+
+/* ===== Add-task form ===== */
+.task-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+}
+
+#taskInput {
+    flex: 1;
+    min-width: 180px;
+}
+
+#taskPriority {
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #1e293b;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* ===== Journal ===== */
+#journal {
+    display: block;
+    width: 100%;
+    min-height: 180px;
+    margin-top: 12px;
+    padding: 16px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+/* ===== Search Bar ===== */
+#searchTasks {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    height: 42px;
+    margin-bottom: 16px;
+    padding: 0 16px;
+    border: 1px solid #d8dfed;
+    border-radius: 12px;
+    background: #fff;
+    color: #17223d;
+    font-size: 14px;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+#searchTasks:hover {
+    border-color: #b9a0fa;
+}
+
+#searchTasks:focus {
+    border-color: #8900f5;
+    box-shadow: 0 0 0 3px rgba(137, 0, 245, .12);
+}
+
+#searchTasks::placeholder {
+    color: #8a94ab;
+}
+
+/* ===== "Repeat every day" option ===== */
+.repeat-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid #d8dfed;
+    border-radius: 10px;
+    background: #fff;
+    color: #26324b;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: background .2s, border-color .2s, color .2s, box-shadow .2s;
+}
+
+.repeat-option:hover {
+    border-color: #b9a0fa;
+}
+
+/* highlight the whole chip when ticked (browsers without :has() just skip this) */
+.repeat-option:has(input:checked) {
+    border-color: #8900f5;
+    background: #f7f3ff;
+    color: #5b21b6;
+}
+
+.repeat-option:has(input:focus-visible) {
+    box-shadow: 0 0 0 3px rgba(137, 0, 245, .18);
+}
+
+/* custom checkbox */
+.repeat-option input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    display: grid;
+    place-content: center;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    border: 2px solid #b8c0d4;
+    border-radius: 6px;
+    background: #fff;
+    outline: none;
+    transition: background .2s, border-color .2s;
+}
+
+.repeat-option input[type="checkbox"]::before {
+    content: "";
+    width: 10px;
+    height: 5px;
+    margin-top: -2px;
+    border-left: 2.5px solid #fff;
+    border-bottom: 2.5px solid #fff;
+    transform: rotate(-45deg) scale(0);
+    transition: transform .15s ease;
+}
+
+.repeat-option input[type="checkbox"]:checked {
+    border-color: #8900f5;
+    background: linear-gradient(135deg, #a100ff, #7600e8);
+}
+
+.repeat-option input[type="checkbox"]:checked::before {
+    transform: rotate(-45deg) scale(1);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 760px) {
+    .filter-toolbar {
+        gap: 14px;
+        padding: 12px;
+    }
+
+    .task-filters {
+        width: 100%;
+    }
+
+    .filter-btn {
+        flex: 1;
+        padding: 0 10px;
+    }
+
+    .toolbar-divider {
+        display: none;
+    }
+
+    .toolbar-group {
+        flex: 1 1 100%;
+    }
+
+    #output > div {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    #output > div > span {
+        flex-basis: calc(100% - 45px);
+    }
+
+    #output select.priority {
+        margin-left: 30px;
+    }
+}
+
 @media (max-width: 650px) {
     body { padding: 18px; }
 
@@ -280,12 +627,6 @@ textarea:focus-visible {
 
     .stat-card { padding: 16px; }
     .stat-card span { font-size: 1.6rem; }
-
-    #output > div {
-        gap: 8px;
-        padding: 12px;
-    }
-
 }
 
 @media (max-width: 500px) {
@@ -296,7 +637,8 @@ textarea:focus-visible {
 
     #taskInput,
     #taskPriority,
-    #addTasks {
+    #addTasks,
+    .repeat-option {
         width: 100%;
     }
 }
@@ -310,103 +652,4 @@ textarea:focus-visible {
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
     }
-}
-
-/* Task filters */
-.task-filters {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 20px 0;
-}
-
-.filter-btn {
-    background: #ffffff;
-    color: #475569;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 9px 18px;
-}
-
-.filter-btn:hover {
-    background: #f1f5f9;
-    color: #1e293b;
-}
-
-.filter-btn.active {
-    background: #6d28d9;
-    color: #ffffff;
-    border-color: #6d28d9;
-}
-
-.filter-btn.active:hover {
-    background: #5b21b6;
-}
-
-/* Make the hidden attribute win over display: flex etc. */
-[hidden] {
-    display: none !important;
-}
-
-/* Empty state */
-.empty-message {
-    margin: 0 0 16px;
-    padding: 18px;
-    border: 1px dashed #cbd5e1;
-    border-radius: 12px;
-    color: #64748b;
-    text-align: center;
-}
-
-.edit-input {
-    flex: 1;
-    min-width: 0;
-    padding: 10px 12px;
-    border: 2px solid #6c63ff;
-    border-radius: 8px;
-    background: var(--input-bg, #ffffff);
-    color: var(--text-color, #222222);
-    font: inherit;
-    outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.edit-input:focus {
-    border-color: #5146e5;
-    box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.18);
-}
-
-.save-edit-button {
-    background: #16a34a;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 9px 14px;
-    cursor: pointer;
-    font: inherit;
-    transition: background 0.2s ease;
-}
-
-.save-edit-button:hover {
-    background: #15803d;
-}
-
-.cancel-edit-button {
-    background: #e5e7eb;
-    color: #374151;
-    border: none;
-    border-radius: 8px;
-    padding: 9px 14px;
-    cursor: pointer;
-    font: inherit;
-    transition: background 0.2s ease;
-}
-
-.cancel-edit-button:hover {
-    background: #d1d5db;
-}
-
-.edit-button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
 }
