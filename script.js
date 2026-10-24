@@ -6,7 +6,9 @@ let tasks = [];
 
 try {
     const parsed = JSON.parse(localStorage.getItem("tasks"));
-    tasks = Array.isArray(parsed) ? parsed : [];
+    tasks = Array.isArray(parsed)
+        ? parsed.filter(task => task && typeof task === "object" && !Array.isArray(task))
+        : [];
 } catch {
     tasks = [];
 }
@@ -29,12 +31,28 @@ let currentPriorityFilter = "all";
 let currentSort = "default";
 let editingTaskId = null;
 
+
 let recurringSkips = {};
 
 try {
-    recurringSkips = JSON.parse(localStorage.getItem("recurringSkips")) || {};
-} catch {
+    const parsed = JSON.parse(localStorage.getItem("recurringSkips"));
+
+    if (
+        parsed !== null &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed)
+    ) {
+        recurringSkips = parsed;
+    }
+} catch (error) {
+    console.error("Could not load recurring skips:", error);
     recurringSkips = {};
+}
+// Ensure each recurring series has an array of skipped dates.
+for (const key of Object.keys(recurringSkips)) {
+    if (!Array.isArray(recurringSkips[key])) {
+        delete recurringSkips[key];
+    }
 }
 
 let journalDate = getDateKey();
@@ -87,8 +105,19 @@ const deleteDialogText = document.getElementById("deleteDialogText");
 // HELPERS
 // ============================================================
 
+
 function makeId() {
-    return crypto.randomUUID?.() ?? Date.now().toString(36) + Math.random().toString(36).slice(2);
+    if (
+        typeof crypto !== "undefined" &&
+        typeof crypto.randomUUID === "function"
+    ) {
+        return crypto.randomUUID();
+    }
+
+    return (
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2)
+    );
 }
 
 function getDateKey(date = new Date()) {
@@ -325,6 +354,7 @@ function renderTask(task) {
     }
 
     //delete
+
     deleteButton.addEventListener("click", async function () {
         const deleted = await deleteTask(task);
 
@@ -334,11 +364,15 @@ function renderTask(task) {
             endEditing();
         }
 
-        taskItem.remove();
+        // Rebuild the displayed task list from the updated tasks array.
+        output.replaceChildren();
+        tasks.forEach(renderTask);
+
         saveTasks();
         updateStats();
         applyFilter();
     });
+
 
     //edit
     editButton.addEventListener("click", function () {
@@ -502,7 +536,12 @@ function applyFilter() {
 
 function loadJournal() {
     journalDateInput.value = journalDate;
-    journal.value = localStorage.getItem("journal:" + journalDate) || "";
+    try {
+        journal.value = localStorage.getItem("journal:" + journalDate) || "";
+    } catch (error) {
+        console.error("Could not load journal entry:", error);
+        journal.value = "";
+    }
     journal.setAttribute(
         "aria-label",
         journalDate === getDateKey() ? "Today's journal" : "Journal for " + journalDate
@@ -615,11 +654,18 @@ searchTasks.addEventListener("input", function () {
 
 // --- journal ---
 journal.addEventListener("input", function () {
-    if (journal.value.trim() === "") {
-        localStorage.removeItem("journal:" + journalDate);
-    } else {
-        localStorage.setItem("journal:" + journalDate, journal.value);
+    const key = "journal:" + journalDate;
+    try{
+        if (journal.value.trim() === "") {
+            localStorage.removeItem(key);
+        } else {
+            localStorage.setItem(key, journal.value);
+        }
     }
+    catch(error){
+        console.error("Could not save journal entry:", error);
+    }
+
 });
 
 prevDay.addEventListener("click", function () {
@@ -640,7 +686,8 @@ journalDateInput.addEventListener("change", function () {
         journalDate = journalDateInput.value;
         loadJournal();
     } else {
-        loadJournal();    // ADD: restores the current date in the field
+        journalDate = getDateKey();
+        loadJournal();
     }
 });
 
@@ -669,10 +716,14 @@ updateStats();
 applyFilter();
 
 // one-time move of your old single entry into today's entry
-const oldJournal = localStorage.getItem("journal");
-if (oldJournal && !localStorage.getItem("journal:" + journalDate)) {
-    localStorage.setItem("journal:" + journalDate, oldJournal);
-    localStorage.removeItem("journal");
+try {
+    const oldJournal = localStorage.getItem("journal");
+    if (oldJournal && !localStorage.getItem("journal:" + journalDate)) {
+        localStorage.setItem("journal:" + journalDate, oldJournal);
+        localStorage.removeItem("journal");
+    }
+} catch (error) {
+    console.error("Could not migrate the old journal entry:", error);
 }
 
 loadJournal();
