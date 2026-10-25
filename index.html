@@ -90,16 +90,22 @@
                     <option value="high">High Priority</option>
                 </select>
                 <button id="addTasks">Add Task</button>
-                <label>
-                    <span>Deadline(option)</span>
-                    <input
-                        type="datetime-local"
-                        id="taskDeadline"
-                        aria-lable="Task deadline"
-                    >
-                </label>
+                <button type="button" id="setDeadlineButton">Set deadline</button>
             </div>
-            
+
+            <dialog id="deadlineDialog" class="confirm-dialog deadline-dialog">
+                <form method="dialog" id="deadlineForm">
+                    <h3>Set task deadline</h3>
+                    <label for="taskDeadline">Date and time</label>
+                    <input type="datetime-local" id="taskDeadline" aria-label="Task deadline">
+                    <div class="dialog-actions">
+                        <button type="button" class="dialog-keep" id="clearDeadlineButton">Clear</button>
+                        <button type="button" class="dialog-keep" id="cancelDeadlineButton">Cancel</button>
+                        <button type="button" id="saveDeadlineButton">Save deadline</button>
+                    </div>
+                </form>
+            </dialog>
+
             <div class="reminder-settings">
                 <button type="button" id = "enableReminders"> Enable Browser Reminders</button>
                 <span id="reminderStatus" role="status" aria-live="polite"> Reminders are not enabled</span>

@@ -601,6 +601,19 @@ textarea:focus-visible {
     padding: 24px;
 }
 
+.deadline-dialog label {
+    display: block;
+    margin-bottom: 6px;
+    color: #475569;
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+.deadline-dialog input[type="datetime-local"] {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
 .confirm-dialog[open] {
     animation: dialog-pop .18s ease-out;
 }
@@ -745,6 +758,7 @@ textarea:focus-visible {
     #taskInput,
     #taskPriority,
     #addTasks,
+    #setDeadlineButton,
     .repeat-option {
         width: 100%;
     }
@@ -759,4 +773,35 @@ textarea:focus-visible {
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
     }
+}
+
+
+.deadline-option {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.deadline-label {
+    display: inline-block;
+    margin: 4px 8px;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+.deadline-label.overdue {
+    color: #d93025;
+    font-weight: 600;
+}
+
+.reminder-settings {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+#reminderStatus {
+    font-size: 0.9rem;
 }

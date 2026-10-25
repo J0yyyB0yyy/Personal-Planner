@@ -107,8 +107,14 @@ const deleteDialogText = document.getElementById("deleteDialogText");
 //Reminder and deadline
 
 const taskDeadline = document.getElementById("taskDeadline");
+const setDeadlineButton = document.getElementById("setDeadlineButton");
+const deadlineDialog = document.getElementById("deadlineDialog");
+const saveDeadlineButton = document.getElementById("saveDeadlineButton");
+const cancelDeadlineButton = document.getElementById("cancelDeadlineButton");
+const clearDeadlineButton = document.getElementById("clearDeadlineButton");
 const enableReminder = document.getElementById("enableReminders");
 const reminderStatus = document.getElementById("reminderStatus");
+let selectedDeadline = "";
 
 // ============================================================
 // HELPERS
@@ -175,6 +181,7 @@ function syncTemplate(task) {
     if (!template) return;
     template.text = task.text;
     template.priority = task.priority;
+    template.dueAt = task.dueAt ?? null;
     saveRecurringTemplates();
 }
 
@@ -295,7 +302,7 @@ function createDailyOccurrences() {
             repeatDaily: true,
             recurrenceId: recurrenceId,
             occurrenceDate: today,
-            dueAt: taskDeadlin.value ? new Date(taskDeadline.value).toISOString() : null,
+            dueAt: template.dueAt ?? null,
             reminderSent: false
         });
     });
@@ -330,6 +337,33 @@ function renderTask(task) {
 
     const taskText = document.createElement("span");
     taskText.textContent = task.text;
+
+    //deadline
+    const deadlineLabel = document.createElement("span");
+    deadlineLabel.classList.add("deadline-label");
+
+    function updateDeadlineLabel() {
+        if (!task.dueAt) {
+            deadlineLabel.textContent = "";
+            deadlineLabel.hidden = true;
+            return;
+        }
+
+        const status = getDeadlineStatus(task);
+
+        deadlineLabel.textContent =
+            `${formatDeadline(task.dueAt)} · ${status}`;
+
+        deadlineLabel.classList.toggle(
+            "overdue",
+            status === "Overdue"
+        );
+
+        deadlineLabel.hidden = false;
+    }
+
+    updateDeadlineLabel();
+
 
     //priotity
     const prioritySelect = document.createElement("select");
@@ -497,6 +531,7 @@ function renderTask(task) {
 
     taskItem.appendChild(checkBox);
     taskItem.appendChild(taskText);
+    taskItem.appendChild(deadlineLabel);
     taskItem.appendChild(prioritySelect);
     taskItem.appendChild(editButton);
     taskItem.appendChild(deleteButton);
@@ -612,6 +647,34 @@ function checkNewDay() {
 // ============================================================
 
 // --- tasks ---
+function updateDeadlineButton() {
+    setDeadlineButton.textContent = selectedDeadline
+        ? `Deadline: ${new Date(selectedDeadline).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
+        : "Set deadline";
+}
+
+setDeadlineButton.addEventListener("click", function () {
+    taskDeadline.value = selectedDeadline;
+    deadlineDialog.showModal();
+});
+
+saveDeadlineButton.addEventListener("click", function () {
+    selectedDeadline = taskDeadline.value;
+    updateDeadlineButton();
+    deadlineDialog.close();
+});
+
+cancelDeadlineButton.addEventListener("click", function () {
+    deadlineDialog.close();
+});
+
+clearDeadlineButton.addEventListener("click", function () {
+    selectedDeadline = "";
+    taskDeadline.value = "";
+    updateDeadlineButton();
+    deadlineDialog.close();
+});
+
 deleteDialog.addEventListener("click", function (e) {
     if (e.target === deleteDialog) deleteDialog.close("cancel");
 });
@@ -631,7 +694,9 @@ addTask.addEventListener("click", function () {
 
         repeatDaily: isRepeating,
         recurrenceId: isRepeating ? makeId() : null,
-        occurrenceDate: getDateKey()
+        occurrenceDate: isRepeating ? getDateKey() : null,
+        dueAt: selectedDeadline ? new Date(selectedDeadline).toISOString() : null,
+        reminderSent: false
     };
     tasks.push(task);
     saveTasks();
@@ -641,6 +706,7 @@ addTask.addEventListener("click", function () {
             recurrenceId: task.recurrenceId,
             text: task.text,
             priority: task.priority,
+            dueAt: task.dueAt,
             repeatDaily: true
         });
 
@@ -653,6 +719,8 @@ addTask.addEventListener("click", function () {
 
     taskInput.value = "";
     repeatDaily.checked = false;
+    selectedDeadline = "";
+    updateDeadlineButton();
     taskInput.focus();
 });
 
@@ -686,6 +754,71 @@ priorityFilter.addEventListener("change", function () {
 searchTasks.addEventListener("input", function () {
     applyFilter();
 });
+
+
+enableReminder.addEventListener("click", async function () {
+    if (!("Notification" in window)) {
+        reminderStatus.textContent =
+            "This browser does not support notifications.";
+        return;
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+
+        if (permission === "granted") {
+            reminderStatus.textContent =
+                "Browser reminders enabled.";
+            checkDueReminders();
+        } else {
+            reminderStatus.textContent =
+                "Notification permission was not granted.";
+        }
+    } catch (error) {
+        console.error("Could not enable notifications:", error);
+        reminderStatus.textContent =
+            "Could not enable notifications.";
+    }
+});
+
+function checkDueReminders() {
+    if (
+        !("Notification" in window) ||
+        Notification.permission !== "granted"
+    ) {
+        return;
+    }
+
+    const now = Date.now();
+    let changed = false;
+
+    tasks.forEach(function (task) {
+        if (!task.dueAt || task.completed || task.reminderSent) {
+            return;
+        }
+
+        const dueTime = new Date(task.dueAt).getTime();
+
+        if (!Number.isFinite(dueTime) || dueTime > now) {
+            return;
+        }
+
+        try {
+            new Notification("Task deadline reached", {
+                body: task.text
+            });
+
+            task.reminderSent = true;
+            changed = true;
+        } catch (error) {
+            console.error("Could not show reminder:", error);
+        }
+    });
+
+    if (changed) {
+        saveTasks();
+    }
+}
 
 // --- journal ---
 journal.addEventListener("input", function () {
@@ -762,4 +895,5 @@ try {
 }
 
 loadJournal();
+checkDueReminders();
 setInterval(checkNewDay, 60000);
