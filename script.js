@@ -86,11 +86,13 @@ const prevDay = document.getElementById("prevDay");
 const nextDay = document.getElementById("nextDay");
 const todayBtn = document.getElementById("todayBtn");
 
+// task info
 const totalTasks = document.getElementById("totalTasks");
 const completedTasks = document.getElementById("completedTasks");
 const pendingTasks = document.getElementById("pendingTasks");
 const emptyMessage = document.getElementById("emptyMessage");
 
+//filter
 const filterButtons = document.querySelectorAll(".filter-btn");
 const emptyTexts = {
     all: "No tasks yet. Add one below.",
@@ -98,8 +100,15 @@ const emptyTexts = {
     completed: "No completed tasks."
 };
 
+//delete
 const deleteDialog = document.getElementById("deleteDialog");
 const deleteDialogText = document.getElementById("deleteDialogText");
+
+//Reminder and deadline
+
+const taskDeadline = document.getElementById("taskDeadline");
+const enableReminder = document.getElementById("enableReminders");
+const reminderStatus = document.getElementById("reminderStatus");
 
 // ============================================================
 // HELPERS
@@ -126,6 +135,30 @@ function getDateKey(date = new Date()) {
     const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
+}
+
+function formatDeadline(dueAt){
+    if(!dueAt) return "";
+
+    const date = new Date(dueAt);
+    return date.toLocaleString([], {dateStyle: "medium", timeStyle: "short"});
+}
+
+function getDeadlineStatus(task){
+    if(!task.dueAt) return "";
+
+    const due = new Date(task.dueAt);
+    const now = new Date();
+
+    if (Number.isNaN(due.getTime())) return "Invalid deadline";
+    if (task.completed) return "Completed";
+    if (due < now) return "Overdue";
+
+    if (getDateKey(due) === getDateKey(now)) {
+        return "Due today";
+    }
+
+    return "Upcoming";
 }
 
 function getPriorityRank(priority) {
@@ -261,7 +294,9 @@ function createDailyOccurrences() {
             priority: template.priority,
             repeatDaily: true,
             recurrenceId: recurrenceId,
-            occurrenceDate: today
+            occurrenceDate: today,
+            dueAt: taskDeadlin.value ? new Date(taskDeadline.value).toISOString() : null,
+            reminderSent: false
         });
     });
 

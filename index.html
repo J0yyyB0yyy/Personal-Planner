@@ -90,6 +90,19 @@
                     <option value="high">High Priority</option>
                 </select>
                 <button id="addTasks">Add Task</button>
+                <label>
+                    <span>Deadline(option)</span>
+                    <input
+                        type="datetime-local"
+                        id="taskDeadline"
+                        aria-lable="Task deadline"
+                    >
+                </label>
+            </div>
+            
+            <div class="reminder-settings">
+                <button type="button" id = "enableReminders"> Enable Browser Reminders</button>
+                <span id="reminderStatus" role="status" aria-live="polite"> Reminders are not enabled</span>
             </div>
         </section>
 
