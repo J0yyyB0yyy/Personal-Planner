@@ -123,6 +123,12 @@
             </div>
             <textarea id="journal" name="msg" rows="10" aria-label="Today's journal"></textarea>
         </section>
+        <section>
+            <h2>BackUp</h2>
+            <button id = "exportBtn">Export backup</button>
+            <button id = "importBtn">Import backup</button>
+            <input type="file" id="importFile" accept=".json,application/json" hidden>
+        </section>
         
         <dialog id="deleteDialog" class="confirm-dialog" aria-labelledby="deleteDialogTitle">
             <form method="dialog">

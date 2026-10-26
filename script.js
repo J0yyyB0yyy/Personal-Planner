@@ -116,6 +116,11 @@ const enableReminder = document.getElementById("enableReminders");
 const reminderStatus = document.getElementById("reminderStatus");
 let selectedDeadline = "";
 
+//BackUp
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
+
 // ============================================================
 // HELPERS
 // ============================================================
@@ -185,9 +190,7 @@ function syncTemplate(task) {
     saveRecurringTemplates();
 }
 
-// ============================================================
 // STORAGE
-// ============================================================
 
 function saveToStorage(key, value) {
     try {
@@ -209,9 +212,74 @@ function saveRecurringSkips() {
     saveToStorage("recurringSkips", recurringSkips);
 }
 
-// ============================================================
+//BackUp
+function exportData(){
+    //gathering
+    const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        tasks: tasks,
+        recurringTemplates: recurringTemplates,
+        recurringSkips: recurringSkips,
+        journal: {}
+    };
+
+    //journal entries one per date
+    for (let i=0; i< localStorage.length; i++){
+        const key  = localStorage.key(i);
+        if(key && key.startsWith("journal:")){
+            data.journal[key]=localStorage.getItem(key);
+        }
+    }
+
+    //turn into text
+    const text = JSON.stringify(data, null, 2);
+    const blob = new Blob([text], {type: "application/json"});
+
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = "planner-backup-" + getDateKey() + ".json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function importData(file){
+    const reader = new FileReader();
+
+    reader.onload = function(){
+        try{
+            const data = JSON.parse(reader.result);
+
+            if(!Array.isArray(data.tasks) || !Array.isArray(data.recurringTemplates)){
+                throw new Error("This doesn't look like a planner backup.");
+            }
+            if(!confirm("This Will replace all current data. Continue?")) return;
+
+            saveToStorage("tasks", data.tasks);
+            saveToStorage("recurringTemplates", data.recurringTemplates);
+            saveToStorage("recurringSkips", data.recurringSkips || {});
+
+            Object.keys(localStorage)
+                .filter(key => key.startsWith("journal:"))
+                .forEach(key => localStorage.removeItem(key));
+
+            Object.entries(data.journal || {}).forEach(function([key, value]){
+                if(key.startsWith("journal:") && typeof value === "string"){
+                    localStorage.setItem(key, value);
+                }
+            });
+            location.reload();
+        }catch(err){
+            alert("Import failed " + err.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
 // TASK LOGIC
-// ============================================================
 
 function endEditing() {
     editingTaskId = null;
@@ -327,9 +395,9 @@ function updateStats() {
     if (tasks.length === 0) searchTasks.value = ""; 
 }
 
-// ============================================================
+
 // RENDERING, FILTERING & SORTING
-// ============================================================
+
 
 function renderTask(task) {
     const taskItem = document.createElement("div");
@@ -600,9 +668,7 @@ function applyFilter() {
     emptyMessage.hidden = visibleCount > 0;
 }
 
-// ============================================================
 // JOURNAL
-// ============================================================
 
 function loadJournal() {
     journalDateInput.value = journalDate;
@@ -642,11 +708,10 @@ function checkNewDay() {
     applyFilter();
 }
 
-// ============================================================
-// EVENT LISTENERS
-// ============================================================
 
-// --- tasks ---
+// EVENT LISTENERS
+
+    // --- tasks ---
 function updateDeadlineButton() {
     setDeadlineButton.textContent = selectedDeadline
         ? `Deadline: ${new Date(selectedDeadline).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
@@ -678,6 +743,23 @@ clearDeadlineButton.addEventListener("click", function () {
 deleteDialog.addEventListener("click", function (e) {
     if (e.target === deleteDialog) deleteDialog.close("cancel");
 });
+
+//backUp
+exportBtn.addEventListener("click", exportData);
+
+importBtn.addEventListener("click", function(){
+    importFile.click();
+});
+
+importFile.addEventListener("click", function(){
+    importFile.value="";
+});
+
+importFile.addEventListener("change", function(){
+    const file = importFile.files && importFile.files[0];
+    if (file) importData(file);
+});
+
 
 //add tasks button
 addTask.addEventListener("click", function () {
@@ -871,9 +953,7 @@ window.addEventListener("storage", function (e) {
     }
 });
 
-// ============================================================
 // STARTUP
-// ============================================================
 
 createDailyOccurrences();
 tasks.forEach(renderTask);
